@@ -2,22 +2,47 @@
 <html lang="pt-br">
 <head>
 <meta charset="utf-8">
-<title>Mini CodePen Auto</title>
+<title>Mini CodePen Dark</title>
 <style>
-  body,html {margin:0;height:100%;display:flex;flex-direction:column;font-family:sans-serif;}
-  header {background:#222;color:#fff;padding:8px;display:flex;gap:8px;align-items:center;}
-  header button {padding:6px 12px;cursor:pointer;}
+  body,html {margin:0;height:100%;display:flex;flex-direction:column;font-family:sans-serif;background:#1e1e2f;color:#eee;}
+  header {background:#2a2a3d;padding:10px;display:flex;gap:10px;align-items:center;border-bottom:1px solid #444;}
+  button {
+    padding:8px 14px;
+    border:0;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:600;
+    background:#3a3a4f;
+    color:#eee;
+    transition:background .2s;
+  }
+  button:hover {background:#505065;}
   .top {display:flex;flex:1;min-height:100px;}
-  textarea {flex:1;padding:8px;font-family:monospace;font-size:14px;resize:none;border:1px solid #ccc;}
-  .gutter {height:6px;background:#ddd;cursor:row-resize;}
+  textarea {
+    flex:1;
+    padding:10px;
+    font-family:monospace;
+    font-size:14px;
+    resize:none;
+    border:1px solid #444;
+    background:#1e1e2f;
+    color:#eee;
+  }
+  .gutter {
+    height:6px;
+    background:#333;
+    cursor:row-resize;
+  }
   .bottom {flex:1;}
-  iframe {width:100%;height:100%;border:0;}
+  iframe {width:100%;height:100%;border:0;background:#fff;}
 </style>
 </head>
 <body>
   <header>
-    <button id="clear">Limpar</button>
-    <button id="download">Baixar</button>
+    <button id="paste">Paste</button>
+    <button id="clear">Clear</button>
+    <button id="copy">Copy</button>
+    <button id="download">Download</button>
   </header>
   <div class="top" id="top">
     <textarea id="html" placeholder="HTML"></textarea>
@@ -44,23 +69,37 @@ ${html.value}
   iframe.srcdoc = code;
 }
 
-// auto-execução em cada digitação
+// auto-execução
 [html, css, js].forEach(ed => ed.addEventListener('input', render));
 
+// Botões
 document.getElementById('clear').onclick = () => {
   html.value = css.value = js.value = '';
   render();
+};
+document.getElementById('copy').onclick = async () => {
+  try {
+    await navigator.clipboard.writeText(iframe.srcdoc);
+    alert('Code copied!');
+  } catch { alert('Copy failed'); }
+};
+document.getElementById('paste').onclick = async () => {
+  try {
+    const text = await navigator.clipboard.readText();
+    html.value = text;
+    render();
+  } catch { alert('Paste failed'); }
 };
 document.getElementById('download').onclick = () => {
   const blob = new Blob([iframe.srcdoc], {type:'text/html'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'projeto.html';
+  a.download = 'project.html';
   a.click();
   URL.revokeObjectURL(a.href);
 };
 
-// Divisor arrastável
+// Divisor arrastável corrigido
 const gutter = document.getElementById('gutter');
 let dragging=false,startY,startH;
 gutter.addEventListener('mousedown',e=>{
@@ -69,7 +108,10 @@ gutter.addEventListener('mousedown',e=>{
 window.addEventListener('mousemove',e=>{
   if(!dragging)return;
   const dy=e.clientY-startY;
-  document.getElementById('top').style.height=(startH+dy)+'px';
+  const newH=startH+dy;
+  if(newH>80 && newH<window.innerHeight-100){
+    document.getElementById('top').style.height=newH+'px';
+  }
 });
 window.addEventListener('mouseup',()=>dragging=false);
 
