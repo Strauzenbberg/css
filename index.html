@@ -1,469 +1,80 @@
 <!doctype html>
 <html lang="pt-br">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Mini CodePen — HTML + CSS + JS (um arquivo)</title>
+<meta charset="utf-8">
+<title>Mini CodePen Auto</title>
 <style>
-  :root{
-    --bg:#0c111b; --panel:#0f1523; --panel-2:#0b1320; --ink:#e6edf3; --muted:#9aa4b2;
-    --accent:#5b9cf3; --border:#1f2a37; --ok:#22c55e; --warn:#f59e0b; --danger:#ef4444;
-    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-    --sans: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0; background: radial-gradient(1200px 700px at 75% -15%, rgba(91,156,243,.12), transparent),
-                         radial-gradient(900px 600px at -10% 110%, rgba(125,211,252,.10), transparent),
-                         var(--bg);
-    color:var(--ink); font:14px/1.4 var(--sans);
-  }
-
-  /* Layout principal: topo (editores) + divisor + preview (iframe) */
-  .app{
-    height:100%; display:flex; flex-direction:column; min-height:0;
-  }
-  header.appbar{
-    display:flex; align-items:center; justify-content:space-between; gap:12px;
-    padding:10px 14px; border-bottom:1px solid var(--border);
-    background: linear-gradient(180deg, rgba(15,21,35,.85), rgba(15,21,35,.6)); backdrop-filter: blur(8px);
-    position:sticky; top:0; z-index:5;
-  }
-  .brand{display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.15px}
-  .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(180deg,#7dd3fc,#5b9cf3);box-shadow:0 0 0 4px rgba(91,156,243,.15)}
-  .actions{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
-  button,.btn, label.toggle{
-    appearance:none; border:1px solid var(--border); background:linear-gradient(180deg,var(--panel),var(--panel-2));
-    color:var(--ink); padding:8px 12px; border-radius:10px; cursor:pointer; display:inline-flex; align-items:center; gap:8px;
-  }
-  button:hover{border-color:#274060}
-  .primary{ background: linear-gradient(180deg, #1a4b9a, #103a7a); border-color:#22529c }
-  .ok{ color:#bbf7d0; border-color:rgba(34,197,94,.35) }
-  .warn{ color:#fef3c7; border-color:rgba(245,158,11,.35) }
-
-  /* Painel de editores (topo) */
-  .top{
-    display:flex; flex-direction:column; border-bottom:1px solid var(--border); min-height:160px; max-height:80vh;
-    background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.00)), var(--panel);
-  }
-  .tabs{
-    display:flex; gap:8px; padding:8px; border-bottom:1px solid var(--border);
-    position:sticky; top:var(--appbar-h,0px); background:linear-gradient(180deg, rgba(12,17,27,.95), rgba(12,17,27,.7));
-    z-index:2;
-  }
-  .tab{
-    padding:8px 12px; border:1px solid var(--border); border-radius:8px; cursor:pointer; user-select:none;
-    background:linear-gradient(180deg, #0f1523, #0c1422); color:var(--muted); display:inline-flex; gap:8px; align-items:center;
-  }
-  .tab.active{ color:var(--ink); border-color:#274060; box-shadow: inset 0 0 0 1px rgba(91,156,243,.25) }
-  .tab .badge{font-size:11px;color:var(--muted);padding:2px 6px;border:1px dashed var(--border);border-radius:999px}
-
-  .editors{
-    position:relative; flex:1; min-height:0;
-  }
-  .pane{
-    position:absolute; inset:0; display:grid; grid-template-rows:auto 1fr; opacity:0; pointer-events:none;
-    transition:opacity .15s ease;
-  }
-  .pane.active{opacity:1; pointer-events:auto}
-  .pane .toolbar{
-    display:flex; align-items:center; gap:10px; padding:8px 12px; border-bottom:1px dashed var(--border); color:var(--muted);
-  }
-  .pane .cm{
-    width:100%; height:100%; border:0; outline:none; padding:12px 14px; resize:none;
-    color:var(--ink); background:transparent; font:13.5px/1.55 var(--mono);
-  }
-
-  /* Divisor arrastável */
-  .gutter{
-    height:8px; cursor:row-resize; background:linear-gradient(180deg, #0f1523, #0c1422);
-    border-top:1px solid var(--border); border-bottom:1px solid var(--border);
-    position:relative;
-  }
-  .gutter:after{
-    content:""; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-    width:48px; height:3px; border-radius:2px; background:#243244;
-  }
-  .gutter.dragging{background:#162235}
-
-  /* Preview (iframe) */
-  .bottom{
-    position:relative; flex:1; min-height:120px; display:flex; flex-direction:column; background:#0b1220;
-  }
-  .previewbar{
-    display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 12px;
-    border-bottom:1px solid var(--border); color:var(--muted); background:linear-gradient(180deg, rgba(12,17,27,.95), rgba(12,17,27,.7));
-  }
-  .viewport-wrap{position:relative; flex:1; min-height:0}
-  iframe.preview{
-    width:100%; height:100%; border:0; background:white;
-  }
-
-  /* Scrollbar */
-  ::-webkit-scrollbar{width:10px;height:10px}
-  ::-webkit-scrollbar-thumb{background:#202a39;border-radius:999px;border:2px solid #0f1523}
-  ::-webkit-scrollbar-track{background:transparent}
-
-  /* Ajuda flutuante opcional */
-  .hint{font-size:12px;color:var(--muted)}
+  body,html {margin:0;height:100%;display:flex;flex-direction:column;font-family:sans-serif;}
+  header {background:#222;color:#fff;padding:8px;display:flex;gap:8px;align-items:center;}
+  header button {padding:6px 12px;cursor:pointer;}
+  .top {display:flex;flex:1;min-height:100px;}
+  textarea {flex:1;padding:8px;font-family:monospace;font-size:14px;resize:none;border:1px solid #ccc;}
+  .gutter {height:6px;background:#ddd;cursor:row-resize;}
+  .bottom {flex:1;}
+  iframe {width:100%;height:100%;border:0;}
 </style>
 </head>
 <body>
-  <div class="app">
-    <header class="appbar" id="appbar">
-      <div class="brand">
-        <span class="dot"></span>
-        <span>Mini CodePen</span>
-      </div>
-      <div class="actions">
-        <label class="toggle">
-          <input id="auto" type="checkbox" checked style="accent-color:#5b9cf3; margin-right:6px" />
-          Auto
-        </label>
-        <button id="run" class="primary">Executar</button>
-        <button id="format" title="Indentação básica">Formatar</button>
-        <button id="clear" class="warn" title="Limpar os 3 editores">Limpar</button>
-        <button id="download" class="ok" title="Baixar um .html com seu código">Baixar</button>
-      </div>
-    </header>
-
-    <!-- Área superior: editors -->
-    <section class="top" id="top">
-      <div class="tabs" role="tablist">
-        <div class="tab active" role="tab" aria-selected="true" data-pane="html">HTML <span class="badge">⌥1</span></div>
-        <div class="tab" role="tab" aria-selected="false" data-pane="css">CSS <span class="badge">⌥2</span></div>
-        <div class="tab" role="tab" aria-selected="false" data-pane="js">JS <span class="badge">⌥3</span></div>
-      </div>
-
-      <div class="editors">
-        <div class="pane active" id="pane-html" role="tabpanel" aria-label="Editor de HTML">
-          <div class="toolbar">
-            <span class="hint">Dica: não precisa de <html> completo. Só o conteúdo do body já funciona.</span>
-          </div>
-          <textarea id="html" class="cm" spellcheck="false"></textarea>
-        </div>
-        <div class="pane" id="pane-css" role="tabpanel" aria-label="Editor de CSS">
-          <div class="toolbar">
-            <span class="hint">Regras serão injetadas em uma tag <style> no preview.</span>
-          </div>
-          <textarea id="css" class="cm" spellcheck="false"></textarea>
-        </div>
-        <div class="pane" id="pane-js" role="tabpanel" aria-label="Editor de JavaScript">
-          <div class="toolbar">
-            <span class="hint">O JS roda isolado dentro do iframe (sandbox).</span>
-          </div>
-          <textarea id="js" class="cm" spellcheck="false"></textarea>
-        </div>
-      </div>
-    </section>
-
-    <!-- Divisor arrastável -->
-    <div class="gutter" id="gutter" title="Arraste para ajustar o tamanho"></div>
-
-    <!-- Área inferior: preview -->
-    <section class="bottom">
-      <div class="previewbar">
-        <div class="hint">Pré-visualização</div>
-        <div class="actions">
-          <button id="reload">Recarregar iframe</button>
-          <button id="openwin">Abrir em nova aba</button>
-        </div>
-      </div>
-      <div class="viewport-wrap">
-        <iframe id="preview" class="preview" sandbox="allow-scripts allow-modals allow-forms allow-pointer-lock allow-popups-to-escape-sandbox"></iframe>
-      </div>
-    </section>
+  <header>
+    <button id="clear">Limpar</button>
+    <button id="download">Baixar</button>
+  </header>
+  <div class="top" id="top">
+    <textarea id="html" placeholder="HTML"></textarea>
+    <textarea id="css" placeholder="CSS"></textarea>
+    <textarea id="js" placeholder="JS"></textarea>
   </div>
+  <div class="gutter" id="gutter"></div>
+  <div class="bottom"><iframe id="preview"></iframe></div>
 
 <script>
-(() => {
-  const $  = (sel, root=document) => root.querySelector(sel);
-  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+const html = document.getElementById('html');
+const css = document.getElementById('css');
+const js = document.getElementById('js');
+const iframe = document.getElementById('preview');
 
-  // Elements
-  const el = {
-    appbar: $('#appbar'),
-    top: $('#top'),
-    gutter: $('#gutter'),
-    iframe: $('#preview'),
-    run: $('#run'),
-    auto: $('#auto'),
-    format: $('#format'),
-    clear: $('#clear'),
-    download: $('#download'),
-    reload: $('#reload'),
-    openwin: $('#openwin'),
-    tabs: $$('.tab'),
-    panes: {
-      html: $('#pane-html'),
-      css:  $('#pane-css'),
-      js:   $('#pane-js')
-    },
-    editors: {
-      html: $('#html'),
-      css:  $('#css'),
-      js:   $('#js')
-    }
-  };
-
-  // Initial content
-  const DEFAULTS = {
-`html`: `<div class="wrap">
-  <h1>Hello, Brasília 👋</h1>
-  <p>Edite HTML, CSS e JS no topo. O resultado aparece aqui embaixo.</p>
-  <button id="btn">Clique em mim</button>
-  <div class="cards">
-    <div class="card">Card 1</div>
-    <div class="card">Card 2</div>
-    <div class="card">Card 3</div>
-  </div>
-</div>`,
-`css`: `:root { --accent: #2563eb; --ink: #0b1220; --muted:#475569; }
-html, body { height: 100%; }
-body { font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial; color: var(--ink); }
-.wrap { padding: 24px; }
-h1 { margin: 0 0 8px; }
-p { margin: 0 0 16px; color: var(--muted); }
-#btn {
-  background: var(--accent); color: #fff; border: 0; padding: 10px 14px; border-radius: 10px;
-  box-shadow: 0 8px 20px rgba(37, 99, 235, .35);
-}
-.cards { margin-top: 16px; display: grid; gap: 12px; grid-template-columns: repeat(3, minmax(0,1fr)); }
-.card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px; box-shadow: 0 6px 16px rgba(2,6,23,.06); }`,
-`js`: `document.getElementById('btn')?.addEventListener('click', () => {
-  const el = document.createElement('div');
-  el.className = 'card';
-  el.textContent = 'Novo card - ' + new Date().toLocaleTimeString();
-  document.querySelector('.cards')?.appendChild(el);
-});`
-  };
-
-  const KEY = 'mini-codepen.v1';
-  const saved = JSON.parse(localStorage.getItem(KEY) || '{}');
-  el.editors.html.value = saved.html ?? DEFAULTS.html;
-  el.editors.css.value  = saved.css  ?? DEFAULTS.css;
-  el.editors.js.value   = saved.js   ?? DEFAULTS.js;
-
-  // Tab switching
-  function setTab(name){
-    el.tabs.forEach(t => t.classList.toggle('active', t.dataset.pane === name));
-    Object.entries(el.panes).forEach(([k, p]) => p.classList.toggle('active', k === name));
-  }
-  el.tabs.forEach(tab => tab.addEventListener('click', () => setTab(tab.dataset.pane)));
-  // Shortcuts: Option/Alt + 1/2/3
-  window.addEventListener('keydown', (e) => {
-    if (!e.altKey) return;
-    if (['1','2','3'].includes(e.key)) {
-      e.preventDefault();
-      setTab(['html','css','js'][Number(e.key)-1]);
-    }
-  });
-
-  // Simple debounce
-  const debounce = (fn, wait=150) => {
-    let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); }
-  };
-
-  // Render to iframe
-  function buildHTML({ html, css, js }){
-    // Minimal, isolated document
-    return `<!doctype html>
-<html lang="pt-br">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Preview</title>
-<style>
-  html, body { height: 100%; }
-  body { margin: 0; background: #ffffff; }
-  ${css || ''}
-</style>
-</head>
+function render(){
+  const code = `
+<!doctype html>
+<html><head><style>${css.value}</style></head>
 <body>
-${html || ''}
-<script>
-try {
-${js || ''}
-//# sourceURL=preview.js
-} catch (err) {
-  const pre = document.createElement('pre');
-  pre.style.cssText = 'background:#fee2e2;color:#7f1d1d;padding:12px;border:1px solid #fecaca;border-radius:8px;margin:12px;white-space:pre-wrap';
-  pre.textContent = 'Erro JS: ' + err.message + '\\n' + (err.stack||'');
-  document.body.appendChild(pre);
+${html.value}
+<script>${js.value}<\/script>
+</body></html>`;
+  iframe.srcdoc = code;
 }
-</script>
-</body>
-</html>`;
-  }
 
-  function render(){
-    const code = {
-      html: el.editors.html.value,
-      css:  el.editors.css.value,
-      js:   el.editors.js.value
-    };
-    try { localStorage.setItem(KEY, JSON.stringify(code)); } catch {}
-    const src = buildHTML(code);
-    // Use srcdoc to avoid navigation
-    el.iframe.srcdoc = src;
-  }
+// auto-execução em cada digitação
+[html, css, js].forEach(ed => ed.addEventListener('input', render));
 
-  const autoRender = debounce(() => { if (el.auto.checked) render(); }, 180);
-
-  // Listeners
-  Object.values(el.editors).forEach(ed => {
-    ed.addEventListener('input', autoRender);
-    // Tab indentation
-    ed.addEventListener('keydown', (e) => {
-      if (e.key === 'Tab') {
-        e.preventDefault();
-        const start = ed.selectionStart, end = ed.selectionEnd, val = ed.value;
-        if (e.shiftKey) {
-          const sel = val.slice(start, end);
-          const lines = sel.split('\n').map(line => line.startsWith('  ') ? line.slice(2) : line.replace(/^\t/, '')).join('\n');
-          ed.value = val.slice(0,start) + lines + val.slice(end);
-          ed.selectionStart = start;
-          ed.selectionEnd = start + lines.length;
-        } else {
-          const sel = val.slice(start, end);
-          const insert = sel ? sel.replace(/^/gm, '  ') : '  ';
-          ed.value = val.slice(0,start) + insert + val.slice(end);
-          const pos = sel ? start + insert.length : start + 2;
-          ed.selectionStart = ed.selectionEnd = pos;
-        }
-        autoRender();
-      }
-    });
-  });
-
-  el.run.addEventListener('click', render);
-  el.reload.addEventListener('click', () => {
-    // Force reload without losing srcdoc
-    const current = el.iframe.srcdoc;
-    el.iframe.srcdoc = current;
-  });
-  el.openwin.addEventListener('click', () => {
-    const code = {
-      html: el.editors.html.value,
-      css:  el.editors.css.value,
-      js:   el.editors.js.value
-    };
-    const src = buildHTML(code);
-    const blob = new Blob([src], { type:'text/html' });
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
-  });
-
-  el.clear.addEventListener('click', () => {
-    if (!confirm('Limpar os 3 editores e voltar ao exemplo?')) return;
-    el.editors.html.value = DEFAULTS.html;
-    el.editors.css.value  = DEFAULTS.css;
-    el.editors.js.value   = DEFAULTS.js;
-    render();
-  });
-
-  el.download.addEventListener('click', () => {
-    const src = buildHTML({
-      html: el.editors.html.value,
-      css:  el.editors.css.value,
-      js:   el.editors.js.value
-    });
-    const blob = new Blob([src], { type:'text/html' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'projeto.html';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  });
-
-  // Format (básico e seguro): só recua CSS e JS com identação simples; HTML: tentativa leve
-  el.format.addEventListener('click', () => {
-    // Mini pretty-print (não perfeito, mas ajuda)
-    const prettyCSS = (css) => {
-      return css
-        .replace(/}\s*/g, '}\n')
-        .replace(/{\s*/g, ' {\n  ')
-        .replace(/;\s*/g, ';\n  ')
-        .replace(/\n\s*\n+/g, '\n')
-        .replace(/\s*}\n/g, '\n}\n')
-        .trim() + '\n';
-    };
-    const prettyJS = (js) => js.replace(/;\s*/g, ';\n').replace(/{/g,'{\n').replace(/}\s*/g,'}\n').replace(/\n{3,}/g,'\n\n');
-    const prettyHTML = (html) => {
-      let indent = 0;
-      return html
-        .replace(/>\s+</g, '><') // normalize
-        .replace(/</g, '\n<')
-        .trim()
-        .split('\n')
-        .map(line => {
-          if (line.match(/^<\/\w/)) indent = Math.max(indent-1,0);
-          const pad = '  '.repeat(indent);
-          if (line.match(/^<\w[^>]*[^/]>$/)) indent++;
-          return pad + line;
-        })
-        .join('\n')
-        .replace(/\n{3,}/g,'\n\n');
-    };
-    el.editors.css.value  = prettyCSS(el.editors.css.value);
-    el.editors.js.value   = prettyJS(el.editors.js.value);
-    el.editors.html.value = prettyHTML(el.editors.html.value);
-    autoRender();
-  });
-
-  // Draggable splitter (horizontal)
-  (() => {
-    const minTop = 120;     // altura mínima do topo
-    const minBottom = 120;  // altura mínima do preview
-    let dragging = false;
-    let startY = 0;
-    let startTopH = 0;
-
-    const onDown = (y) => {
-      dragging = true;
-      el.gutter.classList.add('dragging');
-      startY = y;
-      startTopH = el.top.getBoundingClientRect().height;
-      document.body.style.userSelect = 'none';
-    };
-    const onMove = (y) => {
-      if (!dragging) return;
-      const dy = y - startY;
-      let newH = startTopH + dy;
-      const totalH = document.body.clientHeight - el.appbar.getBoundingClientRect().height - el.gutter.getBoundingClientRect().height;
-      newH = Math.max(minTop, Math.min(newH, totalH - minBottom));
-      el.top.style.height = newH + 'px';
-    };
-    const onUp = () => {
-      if (!dragging) return;
-      dragging = false;
-      el.gutter.classList.remove('dragging');
-      document.body.style.userSelect = '';
-    };
-
-    // Mouse
-    el.gutter.addEventListener('mousedown', (e) => onDown(e.clientY));
-    window.addEventListener('mousemove', (e) => onMove(e.clientY));
-    window.addEventListener('mouseup', onUp);
-    // Touch
-    el.gutter.addEventListener('touchstart', (e) => onDown(e.touches[0].clientY), {passive:true});
-    window.addEventListener('touchmove', (e) => onMove(e.touches[0].clientY), {passive:true});
-    window.addEventListener('touchend', onUp);
-  })();
-
-  // Keep track of appbar height for sticky calc (optional)
-  const resizeObs = new ResizeObserver(() => {
-    document.documentElement.style.setProperty('--appbar-h', el.appbar.getBoundingClientRect().height + 'px');
-  });
-  resizeObs.observe(el.appbar);
-
-  // First render
+document.getElementById('clear').onclick = () => {
+  html.value = css.value = js.value = '';
   render();
-})();
+};
+document.getElementById('download').onclick = () => {
+  const blob = new Blob([iframe.srcdoc], {type:'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'projeto.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+
+// Divisor arrastável
+const gutter = document.getElementById('gutter');
+let dragging=false,startY,startH;
+gutter.addEventListener('mousedown',e=>{
+  dragging=true;startY=e.clientY;startH=document.getElementById('top').offsetHeight;
+});
+window.addEventListener('mousemove',e=>{
+  if(!dragging)return;
+  const dy=e.clientY-startY;
+  document.getElementById('top').style.height=(startH+dy)+'px';
+});
+window.addEventListener('mouseup',()=>dragging=false);
+
+// Render inicial
+render();
 </script>
 </body>
 </html>
